@@ -1,13 +1,15 @@
 """
-Example 4: Tool Calling 鈥?鍗曟璋冪敤 + 澶氳疆宸ュ叿寰幆
+Example 4: Tool Calling — 单次调用 + 多轮工具循环
 ===================================================
 
-鏈ず渚嬫紨绀?Hy3 API 鐨勫伐鍏疯皟鐢?(Function Calling) 鑳藉姏锛?  - 瀹氫箟宸ュ叿 (Tool Schema)
-  - 鍗曟宸ュ叿璋冪敤锛氭ā鍨嬭繑鍥?tool_calls
-  - 澶氳疆宸ュ叿寰幆锛氭ā鍨?鈫?璋冪敤宸ュ叿 鈫?鍥炰紶缁撴灉 鈫?妯″瀷鏁村悎鍥炵瓟
-  - tool_choice 鐨勭敤娉?(auto / none / required)
+本示例演示 Hy3 API 的工具调用 (Function Calling) 能力：
+  - 定义工具 (Tool Schema)
+  - 单次工具调用：模型返回 tool_calls
+  - 多轮工具循环：模型 → 调用工具 → 回传结果 → 模型整合回答
+  - tool_choice 的用法 (auto / none / required)
 
-杩愯鏂瑰紡锛?    export HY3_API_KEY="your-api-key"
+运行方式：
+    export HY3_API_KEY="your-api-key"
     python 04_tool_calling.py
 """
 
@@ -16,7 +18,7 @@ import json
 from openai import OpenAI
 
 # ============================================================
-# 閰嶇疆
+# 配置
 # ============================================================
 
 API_KEY = os.environ.get("HY3_API_KEY", "your-api-key-here")
@@ -33,35 +35,37 @@ def print_section(title: str):
 
 
 # ============================================================
-# 瀹氫箟妯℃嫙宸ュ叿
+# 定义模拟工具
 # ============================================================
 
-# 妯℃嫙鐨勫ぉ姘旀煡璇㈠嚱鏁?def get_weather(city: str) -> dict:
-    """妯℃嫙澶╂皵鏌ヨ锛堝疄闄呴」鐩腑鍙浛鎹负鐪熷疄 API 璋冪敤锛?""
+# 模拟的天气查询函数
+def get_weather(city: str) -> dict:
+    """模拟天气查询（实际项目中可替换为真实 API 调用）"""
     weather_data = {
-        "鍖椾含": {"temperature": "32掳C", "weather": "鏅?, "humidity": "45%"},
-        "涓婃捣": {"temperature": "28掳C", "weather": "澶氫簯杞皬闆?, "humidity": "70%"},
-        "娣卞湷": {"temperature": "33掳C", "weather": "闆烽樀闆?, "humidity": "85%"},
-        "鏉窞": {"temperature": "30掳C", "weather": "闃?, "humidity": "60%"},
+        "北京": {"temperature": "32°C", "weather": "晴", "humidity": "45%"},
+        "上海": {"temperature": "28°C", "weather": "多云转小雨", "humidity": "70%"},
+        "深圳": {"temperature": "33°C", "weather": "雷阵雨", "humidity": "85%"},
+        "杭州": {"temperature": "30°C", "weather": "阴", "humidity": "60%"},
     }
-    result = weather_data.get(city, {"temperature": "鏈煡", "weather": "鏃犳暟鎹?, "humidity": "鏈煡"})
+    result = weather_data.get(city, {"temperature": "未知", "weather": "无数据", "humidity": "未知"})
     result["city"] = city
     return result
 
 
-# 妯℃嫙鐨勫揩閫掓煡璇㈠嚱鏁?def query_express(tracking_number: str) -> dict:
-    """妯℃嫙蹇€掓煡璇紙瀹為檯椤圭洰涓彲鏇挎崲涓虹湡瀹?API 璋冪敤锛?""
+# 模拟的快递查询函数
+def query_express(tracking_number: str) -> dict:
+    """模拟快递查询（实际项目中可替换为真实 API 调用）"""
     return {
         "tracking_number": tracking_number,
-        "status": "杩愯緭涓?,
-        "location": "骞垮窞鍒嗘嫞涓績",
+        "status": "运输中",
+        "location": "广州分拣中心",
         "estimated_delivery": "2026-07-25",
-        "carrier": "椤轰赴閫熻繍",
+        "carrier": "顺丰速运",
     }
 
 
 # ============================================================
-# 瀹氫箟宸ュ叿 Schema
+# 定义工具 Schema
 # ============================================================
 
 TOOLS = [
@@ -69,13 +73,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_weather",
-            "description": "鑾峰彇鎸囧畾鍩庡競鐨勫疄鏃跺ぉ姘斾俊鎭紝鍖呮嫭娓╁害銆佸ぉ姘旂姸鍐靛拰婀垮害",
+            "description": "获取指定城市的实时天气信息，包括温度、天气状况和湿度",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "city": {
                         "type": "string",
-                        "description": "鍩庡競鍚嶇О锛屽锛氬寳浜€佷笂娴枫€佹繁鍦?,
+                        "description": "城市名称，如：北京、上海、深圳",
                     },
                 },
                 "required": ["city"],
@@ -86,13 +90,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "query_express",
-            "description": "鏍规嵁蹇€掑崟鍙锋煡璇㈠寘瑁圭殑鐗╂祦鐘舵€佸拰棰勮閫佽揪鏃堕棿",
+            "description": "根据快递单号查询包裹的物流状态和预计送达时间",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "tracking_number": {
                         "type": "string",
-                        "description": "蹇€掑崟鍙?,
+                        "description": "快递单号",
                     },
                 },
                 "required": ["tracking_number"],
@@ -101,25 +105,26 @@ TOOLS = [
     },
 ]
 
-# 宸ュ叿鍚?鈫?瀹炵幇鍑芥暟鐨勬槧灏?TOOL_HANDLERS = {
+# 工具名 → 实现函数的映射
+TOOL_HANDLERS = {
     "get_weather": get_weather,
     "query_express": query_express,
 }
 
 
 # ============================================================
-# 1. 鍗曟宸ュ叿璋冪敤
+# 1. 单次工具调用
 # ============================================================
 
-print_section("1. 鍗曟宸ュ叿璋冪敤 (Single Tool Call)")
+print_section("1. 单次工具调用 (Single Tool Call)")
 
 messages = [
-    {"role": "user", "content": "鍖椾含浠婂ぉ澶╂皵鎬庝箞鏍凤紵"},
+    {"role": "user", "content": "北京今天天气怎么样？"},
 ]
 
-print("馃摛 璇锋眰:")
+print("📤 请求:")
 print(f"   model: {MODEL}")
-print(f"   messages: [{{role: 'user', content: '鍖椾含浠婂ぉ澶╂皵鎬庝箞鏍凤紵'}}]")
+print(f"   messages: [{{role: 'user', content: '北京今天天气怎么样？'}}]")
 print(f"   tools: [get_weather, query_express]")
 print(f"   tool_choice: 'auto'")
 print()
@@ -134,7 +139,7 @@ response = client.chat.completions.create(
 
 assistant_msg = response.choices[0].message
 
-print("馃摜 瀹屾暣 Response 瀵硅薄:")
+print("📥 完整 Response 对象:")
 print(f"   finish_reason: {response.choices[0].finish_reason}")
 print(f"   has_tool_calls: {assistant_msg.tool_calls is not None}")
 
@@ -145,14 +150,15 @@ if assistant_msg.tool_calls:
         print(f"     function.name: {tc.function.name}")
         print(f"     function.arguments: {tc.function.arguments}")
 
-        # 鎵ц宸ュ叿璋冪敤
+        # 执行工具调用
         args = json.loads(tc.function.arguments)
         result = TOOL_HANDLERS[tc.function.name](**args)
-        print(f"\n馃挰 妯℃嫙宸ュ叿鎵ц缁撴灉:")
+        print(f"\n💬 模拟工具执行结果:")
         print(f"   {json.dumps(result, ensure_ascii=False)}")
 
-        print(f"\n馃挰 绀轰緥杈撳嚭锛堝皢宸ュ叿缁撴灉杩斿洖妯″瀷鍚庯級:")
-        # 鏋勫缓瀹屾暣鐨勫伐鍏疯皟鐢ㄦ秷鎭?        messages.append(assistant_msg)
+        print(f"\n💬 示例输出（将工具结果返回模型后）:")
+        # 构建完整的工具调用消息
+        messages.append(assistant_msg)
         messages.append({
             "role": "tool",
             "tool_call_id": tc.id,
@@ -167,32 +173,32 @@ if assistant_msg.tool_calls:
         )
         print(f"   {final_response.choices[0].message.content}")
 else:
-    print("   (妯″瀷閫夋嫨鐩存帴鍥炲锛屾湭瑙﹀彂宸ュ叿璋冪敤)")
+    print("   (模型选择直接回复，未触发工具调用)")
     print(f"   content: {assistant_msg.content}")
 
 
 # ============================================================
-# 2. 澶氳疆宸ュ叿寰幆 (Multi-Turn Tool Loop)
+# 2. 多轮工具循环 (Multi-Turn Tool Loop)
 # ============================================================
 
-print_section("2. 澶氳疆宸ュ叿寰幆 (Multi-Turn Tool Loop)")
+print_section("2. 多轮工具循环 (Multi-Turn Tool Loop)")
 
 messages = [
     {
         "role": "user",
-        "content": "璇峰府鎴戝仛涓変欢浜嬶細1) 鏌ヤ竴涓嬫繁鍦崇殑澶╂皵锛?) 鏌ュ揩閫掑崟鍙?SF1234567890 鐨勭墿娴佺姸鎬侊紱"
-                   "3) 鏍规嵁澶╂皵鍜岀墿娴佹儏鍐碉紝缁欐垜涓€涓畝鐭殑鍑鸿寤鸿銆?,
+        "content": "请帮我做三件事：1) 查一下深圳的天气；2) 查快递单号 SF1234567890 的物流状态；"
+                   "3) 根据天气和物流情况，给我一个简短的出行建议。",
     },
 ]
 
-MAX_TOOL_ROUNDS = 5  # 闃叉鏃犻檺寰幆
+MAX_TOOL_ROUNDS = 5  # 防止无限循环
 
-print("馃摛 璇锋眰锛堝惈澶氫釜宸ュ叿闇€姹傦級:")
+print("📤 请求（含多个工具需求）:")
 print(f"   user: {messages[0]['content'][:80]}...")
 print()
 
 for turn in range(MAX_TOOL_ROUNDS):
-    print(f"--- 绗?{turn + 1} 杞?---")
+    print(f"--- 第 {turn + 1} 轮 ---")
 
     response = client.chat.completions.create(
         model=MODEL,
@@ -204,17 +210,19 @@ for turn in range(MAX_TOOL_ROUNDS):
 
     assistant_msg = response.choices[0].message
 
-    # 濡傛灉妯″瀷涓嶅啀璋冪敤宸ュ叿锛岃緭鍑烘渶缁堝洖澶?    if not assistant_msg.tool_calls:
-        print(f"鉁?妯″瀷鏈€缁堝洖澶?")
+    # 如果模型不再调用工具，输出最终回复
+    if not assistant_msg.tool_calls:
+        print(f"✅ 模型最终回复:")
         print(f"   {assistant_msg.content}")
         break
 
-    # 澶勭悊鎵€鏈夊伐鍏疯皟鐢?    messages.append(assistant_msg)
+    # 处理所有工具调用
+    messages.append(assistant_msg)
     for tc in assistant_msg.tool_calls:
-        print(f"   馃敡 璋冪敤宸ュ叿: {tc.function.name}({tc.function.arguments})")
+        print(f"   🔧 调用工具: {tc.function.name}({tc.function.arguments})")
         args = json.loads(tc.function.arguments)
         result = TOOL_HANDLERS[tc.function.name](**args)
-        print(f"   馃摝 宸ュ叿杩斿洖: {json.dumps(result, ensure_ascii=False)}")
+        print(f"   📦 工具返回: {json.dumps(result, ensure_ascii=False)}")
 
         messages.append({
             "role": "tool",
@@ -224,25 +232,26 @@ for turn in range(MAX_TOOL_ROUNDS):
     print()
 
 if turn + 1 >= MAX_TOOL_ROUNDS:
-    print("鈿狅笍  杈惧埌鏈€澶у伐鍏疯疆娆￠檺鍒讹紝涓柇寰幆銆?)
+    print("⚠️  达到最大工具轮次限制，中断循环。")
 
 
 # ============================================================
-# 3. tool_choice 閫夐」璇存槑
+# 3. tool_choice 选项说明
 # ============================================================
 
-print_section("3. tool_choice 閫夐」瀵规瘮")
+print_section("3. tool_choice 选项对比")
 
 test_messages = [
-    {"role": "user", "content": "浠婂ぉ蹇冩儏涓嶉敊锛岀粰鎴戞帹鑽愪竴閮ㄧ數褰卞惂銆?},
+    {"role": "user", "content": "今天心情不错，给我推荐一部电影吧。"},
 ]
 
-# 3a. tool_choice="none" 鈥?涓嶄娇鐢ㄥ伐鍏?print("3a. tool_choice='none' 鈥?涓嶄娇鐢ㄥ伐鍏凤紝鐩存帴鍥炲")
+# 3a. tool_choice="none" — 不使用工具
+print("3a. tool_choice='none' — 不使用工具，直接回复")
 response = client.chat.completions.create(
     model=MODEL,
     messages=test_messages,
     tools=TOOLS,
-    tool_choice="none",  # 妯″瀷涓嶈兘璋冪敤宸ュ叿
+    tool_choice="none",  # 模型不能调用工具
     temperature=0.9,
     max_tokens=128,
 )
@@ -251,9 +260,9 @@ print(f"   has_tool_calls: {msg.tool_calls is not None}")
 print(f"   content: {msg.content[:100]}...")
 print()
 
-# 3b. tool_choice="required" 鈥?寮哄埗璋冪敤宸ュ叿
-print("3b. tool_choice='required' 鈥?寮哄埗璋冪敤宸ュ叿")
-print("   (鍗充娇闂涓嶉渶瑕佸伐鍏凤紝妯″瀷涔熷繀椤昏皟鐢?")
+# 3b. tool_choice="required" — 强制调用工具
+print("3b. tool_choice='required' — 强制调用工具")
+print("   (即使问题不需要工具，模型也必须调用)")
 response = client.chat.completions.create(
     model=MODEL,
     messages=test_messages,
@@ -264,7 +273,7 @@ response = client.chat.completions.create(
 msg = response.choices[0].message
 print(f"   has_tool_calls: {msg.tool_calls is not None}")
 if msg.tool_calls:
-    print(f"   浠嶇劧璋冪敤浜? {msg.tool_calls[0].function.name}")
+    print(f"   仍然调用了: {msg.tool_calls[0].function.name}")
 print()
 
-print("鉁?Example 4 瀹屾垚锛?)
+print("✅ Example 4 完成！")

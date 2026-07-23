@@ -1,79 +1,82 @@
 # Hy3 API Quickstart
 
-> **5 鍒嗛挓璺戦€氱涓€娆¤皟鐢紝鍗婂皬鏃朵笂鎵嬩富瑕佽兘鍔?*
+> **5 分钟跑通第一次调用，半小时上手主要能力**
 
-Hy3 鏄吘璁贩鍏冨洟闃熺爺鍙戠殑 295B MoE锛堟贩鍚堜笓瀹讹級澶фā鍨嬶紝鎻愪緵 OpenAI 鍏煎鐨?API 鎺ュ彛銆傛湰鏂囨。甯姪浣犲揩閫熸帴鍏ュ苟寮€濮嬩娇鐢ㄣ€?
----
-
-## 鐩綍
-
-- [1. 鍩虹淇℃伅](#1-鍩虹淇℃伅)
-- [2. 鐜鍑嗗](#2-鐜鍑嗗)
-- [3. 5 鍒嗛挓蹇€熷紑濮媇(#3-5-鍒嗛挓蹇€熷紑濮?
-- [4. 鏍稿績鍙傛暟璇存槑](#4-鏍稿績鍙傛暟璇存槑)
-- [5. 杩涢樁鑳藉姏](#5-杩涢樁鑳藉姏)
-- [6. 甯歌鎶ラ敊涓庢帓鏌(#6-甯歌鎶ラ敊涓庢帓鏌?
-- [7. 鏇村绀轰緥](#7-鏇村绀轰緥)
+Hy3 是腾讯混元团队研发的 295B MoE（混合专家）大模型，提供 OpenAI 兼容的 API 接口。本文档帮助你快速接入并开始使用。
 
 ---
 
-## 1. 鍩虹淇℃伅
+## 目录
 
-### 1.1 API 绔偣
+- [1. 基础信息](#1-基础信息)
+- [2. 环境准备](#2-环境准备)
+- [3. 5 分钟快速开始](#3-5-分钟快速开始)
+- [4. 核心参数说明](#4-核心参数说明)
+- [5. 进阶能力](#5-进阶能力)
+- [6. 常见报错与排查](#6-常见报错与排查)
+- [7. 更多示例](#7-更多示例)
 
-Hy3 鏀寔浠ヤ笅鎺ュ叆鏂瑰紡锛?
-| 鎺ュ叆鏂瑰紡 | Base URL | 閫傜敤鍦烘櫙 |
+---
+
+## 1. 基础信息
+
+### 1.1 API 端点
+
+Hy3 支持以下接入方式：
+
+| 接入方式 | Base URL | 适用场景 |
 |----------|----------|----------|
-| **TokenHub锛堟帹鑽愶級** | `https://tokenhub.tencentmaas.com/v1` | 浜?API锛屽紑绠卞嵆鐢?|
-| **鑵捐浜?LKEAP** | `https://api.lkeap.cloud.tencent.com/plan/v3` | 鑵捐浜戠敤鎴?|
-| **鑷儴缃?(vLLM/SGLang)** | `http://127.0.0.1:8000/v1` | 绉佹湁鍖栭儴缃?|
+| **TokenHub（推荐）** | `https://tokenhub.tencentmaas.com/v1` | 云 API，开箱即用 |
+| **腾讯云 LKEAP** | `https://api.lkeap.cloud.tencent.com/plan/v3` | 腾讯云用户 |
+| **自部署 (vLLM/SGLang)** | `http://127.0.0.1:8000/v1` | 私有化部署 |
 
-### 1.2 鍙敤妯″瀷
+### 1.2 可用模型
 
-| 妯″瀷鍚?| 璇存槑 |
+| 模型名 | 说明 |
 |--------|------|
-| `hy3` | Hy3 姝ｅ紡鐗堬紙鎺ㄨ崘锛?|
-| `hy3-preview` | Hy3 Preview 鐗?|
-| `hunyuan/hy3` | EdgeOne 骞冲彴涓婄殑鍚嶇О |
+| `hy3` | Hy3 正式版（推荐） |
+| `hy3-preview` | Hy3 Preview 版 |
+| `hunyuan/hy3` | EdgeOne 平台上的名称 |
 
 ### 1.3 API Key
 
-- **TokenHub**锛氬湪 [TokenHub 鎺у埗鍙癩(https://tokenhub.tencentmaas.com) 鍒涘缓 API Key
-- **鑵捐浜?*锛氬湪 [鑵捐浜戞帶鍒跺彴](https://console.cloud.tencent.com) 鑾峰彇 SecretId/SecretKey
-- **鑷儴缃?*锛氭湰鍦伴儴缃叉椂鏃犻渶璁よ瘉锛宍api_key` 浼?`"EMPTY"` 鍗冲彲
+- **TokenHub**：在 [TokenHub 控制台](https://tokenhub.tencentmaas.com) 创建 API Key
+- **腾讯云**：在 [腾讯云控制台](https://console.cloud.tencent.com) 获取 SecretId/SecretKey
+- **自部署**：本地部署时无需认证，`api_key` 传 `"EMPTY"` 即可
 
-### 1.4 閫熺巼闄愬埗涓庡畾浠?
-| 椤圭洰 | 璇存槑 |
+### 1.4 速率限制与定价
+
+| 项目 | 说明 |
 |------|------|
-| **涓婁笅鏂囩獥鍙?* | 256K tokens |
-| **鏈€澶ц緭鍑?* | 32K tokens锛堟寮忕増锛? 128K tokens锛圥review锛?|
-| **杈撳叆浠锋牸** | 楼1.00 / 鐧句竾 tokens |
-| **杈撳嚭浠锋牸** | 楼4.00 / 鐧句竾 tokens |
-| **缂撳瓨鍛戒腑** | 楼0.25 / 鐧句竾 tokens |
-| **骞跺彂闄愬埗** | 瑙嗗叿浣撳钩鍙板椁愯€屽畾锛屽厤璐圭増閫氬父涓?5锝?0 QPS |
+| **上下文窗口** | 256K tokens |
+| **最大输出** | 32K tokens（正式版）/ 128K tokens（Preview） |
+| **输入价格** | ¥1.00 / 百万 tokens |
+| **输出价格** | ¥4.00 / 百万 tokens |
+| **缓存命中** | ¥0.25 / 百万 tokens |
+| **并发限制** | 视具体平台套餐而定，免费版通常为 5～10 QPS |
 
-### 1.5 妯″瀷瑙勬牸
+### 1.5 模型规格
 
-| 灞炴€?| 鍊?|
+| 属性 | 值 |
 |------|-----|
-| 鏋舵瀯 | Mixture-of-Experts (MoE) |
-| 鎬诲弬鏁?| 295B |
-| 婵€娲诲弬鏁?| 21B |
-| MTP 灞傚弬鏁?| 3.8B |
-| 涓婁笅鏂囬暱搴?| 256K |
-| 涓撳鏁伴噺 | 192 涓紝top-8 婵€娲?|
+| 架构 | Mixture-of-Experts (MoE) |
+| 总参数 | 295B |
+| 激活参数 | 21B |
+| MTP 层参数 | 3.8B |
+| 上下文长度 | 256K |
+| 专家数量 | 192 个，top-8 激活 |
 
 ---
 
-## 2. 鐜鍑嗗
+## 2. 环境准备
 
-### 瀹夎 Python SDK
+### 安装 Python SDK
 
 ```bash
 pip install openai
 ```
 
-### 璁剧疆鐜鍙橀噺
+### 设置环境变量
 
 ```bash
 # Linux / macOS
@@ -87,38 +90,40 @@ $env:HY3_BASE_URL = "https://tokenhub.tencentmaas.com/v1"
 
 ---
 
-## 3. 5 鍒嗛挓蹇€熷紑濮?
-### 3.1 鏈€绠€璋冪敤 鈥?Python (OpenAI SDK)
+## 3. 5 分钟快速开始
+
+### 3.1 最简调用 — Python (OpenAI SDK)
 
 ```python
 import os
 from openai import OpenAI
 
-# 1. 鍒涘缓瀹㈡埛绔?client = OpenAI(
+# 1. 创建客户端
+client = OpenAI(
     api_key=os.environ.get("HY3_API_KEY", "your-api-key"),
     base_url=os.environ.get("HY3_BASE_URL", "https://tokenhub.tencentmaas.com/v1"),
 )
 
-# 2. 鍙戣捣瀵硅瘽璇锋眰
+# 2. 发起对话请求
 response = client.chat.completions.create(
     model="hy3",
     messages=[
-        {"role": "user", "content": "浣犲ソ锛佽鐢ㄤ竴鍙ヨ瘽浠嬬粛浣犺嚜宸便€?},
+        {"role": "user", "content": "你好！请用一句话介绍你自己。"},
     ],
     temperature=0.9,
     max_tokens=512,
 )
 
-# 3. 鎵撳嵃缁撴灉
+# 3. 打印结果
 print(response.choices[0].message.content)
 ```
 
-**杩愯锛?*
+**运行：**
 ```bash
 python quickstart_demo.py
 ```
 
-### 3.2 鏈€绠€璋冪敤 鈥?curl
+### 3.2 最简调用 — curl
 
 ```bash
 curl https://tokenhub.tencentmaas.com/v1/chat/completions \
@@ -127,14 +132,14 @@ curl https://tokenhub.tencentmaas.com/v1/chat/completions \
   -d '{
     "model": "hy3",
     "messages": [
-      {"role": "user", "content": "浣犲ソ锛佽鐢ㄤ竴鍙ヨ瘽浠嬬粛浣犺嚜宸便€?}
+      {"role": "user", "content": "你好！请用一句话介绍你自己。"}
     ],
     "temperature": 0.9,
     "max_tokens": 512
   }'
 ```
 
-**棰勬湡杈撳嚭锛堢ず渚嬶級锛?*
+**预期输出（示例）：**
 ```json
 {
   "id": "chatcmpl-xxx",
@@ -146,7 +151,7 @@ curl https://tokenhub.tencentmaas.com/v1/chat/completions \
       "index": 0,
       "message": {
         "role": "assistant",
-        "content": "浣犲ソ锛佹垜鏄吘璁贩鍏?Hy3锛屼竴涓?295B 鍙傛暟鐨勬贩鍚堜笓瀹跺ぇ妯″瀷锛屾搮闀挎帹鐞嗐€佺紪绋嬪拰鏅鸿兘浣撲换鍔°€?
+        "content": "你好！我是腾讯混元 Hy3，一个 295B 参数的混合专家大模型，擅长推理、编程和智能体任务。"
       },
       "finish_reason": "stop"
     }
@@ -159,8 +164,10 @@ curl https://tokenhub.tencentmaas.com/v1/chat/completions \
 }
 ```
 
-### 3.3 鑷儴缃叉柟寮忚皟鐢?
-濡傛灉浣犲凡閫氳繃 vLLM 鎴?SGLang 鑷閮ㄧ讲 Hy3锛?
+### 3.3 自部署方式调用
+
+如果你已通过 vLLM 或 SGLang 自行部署 Hy3：
+
 ```python
 from openai import OpenAI
 
@@ -169,11 +176,11 @@ client = OpenAI(base_url="http://127.0.0.1:8000/v1", api_key="EMPTY")
 response = client.chat.completions.create(
     model="hy3",
     messages=[
-        {"role": "user", "content": "浣犲ソ锛佽绠€鍗曚粙缁嶄竴涓嬩綘鑷繁銆?},
+        {"role": "user", "content": "你好！请简单介绍一下你自己。"},
     ],
     temperature=0.9,
     top_p=1.0,
-    # 鑷儴缃叉椂閫氳繃 extra_body 浼犲叆 reasoning_effort
+    # 自部署时通过 extra_body 传入 reasoning_effort
     extra_body={"chat_template_kwargs": {"reasoning_effort": "no_think"}},
 )
 print(response.choices[0].message.content)
@@ -181,46 +188,49 @@ print(response.choices[0].message.content)
 
 ---
 
-## 4. 鏍稿績鍙傛暟璇存槑
+## 4. 核心参数说明
 
-### 4.1 鍩虹鍙傛暟
+### 4.1 基础参数
 
-| 鍙傛暟 | 绫诲瀷 | 榛樿鍊?| 璇存槑 |
+| 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `temperature` | float | 0.9 | 閲囨牱娓╁害銆?锝?锛岃秺楂樿秺闅忔満锛岃秺浣庤秺纭畾銆傛帹鑽?0.9 |
-| `top_p` | float | 1.0 | 鏍搁噰鏍枫€傚彧浠庣疮绉鐜囪揪鍒?top_p 鐨?token 涓噰鏍枫€傛帹鑽?1.0 |
-| `max_tokens` | int | 鈥?| 鏈€澶ц緭鍑?token 鏁般€備笉浼犲垯鐢辨ā鍨嬭嚜鍔ㄥ喅瀹?|
-| `stop` | str / list | 鈥?| 鍋滄璇嶃€傞亣鍒拌鍐呭鏃跺仠姝㈢敓鎴?|
-| `stream` | bool | false | 鏄惁鍚敤娴佸紡杈撳嚭 |
+| `temperature` | float | 0.9 | 采样温度。0～2，越高越随机，越低越确定。推荐 0.9 |
+| `top_p` | float | 1.0 | 核采样。只从累积概率达到 top_p 的 token 中采样。推荐 1.0 |
+| `max_tokens` | int | — | 最大输出 token 数。不传则由模型自动决定 |
+| `stop` | str / list | — | 停止词。遇到该内容时停止生成 |
+| `stream` | bool | false | 是否启用流式输出 |
 
-### 4.2 鎺ㄧ悊妯″紡 (reasoning_effort)
+### 4.2 推理模式 (reasoning_effort)
 
-Hy3 鏀寔銆屽揩鎱㈡€濊€冭瀺鍚堛€嶁€斺€斿彲鏍规嵁浠诲姟澶嶆潅搴﹀垏鎹㈡帹鐞嗘繁搴︺€?
-| 鍊?| 妯″紡 | 閫傜敤鍦烘櫙 |
+Hy3 支持「快慢思考融合」——可根据任务复杂度切换推理深度。
+
+| 值 | 模式 | 适用场景 |
 |----|------|----------|
-| `"no_think"` / `"low"` | 蹇€濊€冿紙鐩存帴鍥炲锛?| 鏃ュ父瀵硅瘽銆佺畝鍗曢棶绛?|
-| `"medium"` | 涓瓑鎺ㄧ悊 | 涓€鑸垎鏋愪换鍔?|
-| `"high"` | 鎱㈡€濊€冿紙娣卞害鎬濈淮閾撅級 | 鏁板銆佺紪绋嬨€佸鏉傛帹鐞?|
+| `"no_think"` / `"low"` | 快思考（直接回复） | 日常对话、简单问答 |
+| `"medium"` | 中等推理 | 一般分析任务 |
+| `"high"` | 慢思考（深度思维链） | 数学、编程、复杂推理 |
 
-**浜?API 璋冪敤鏂瑰紡锛?*
+**云 API 调用方式：**
 ```python
 response = client.chat.completions.create(
     model="hy3",
-    messages=[{"role": "user", "content": "璇佹槑鈭?鏄棤鐞嗘暟"}],
-    reasoning_effort="high",  # 寮€鍚繁搴︽€濊€?)
+    messages=[{"role": "user", "content": "证明√2是无理数"}],
+    reasoning_effort="high",  # 开启深度思考
+)
 ```
 
-**鑷儴缃?(vLLM) 璋冪敤鏂瑰紡锛?*
+**自部署 (vLLM) 调用方式：**
 ```python
 response = client.chat.completions.create(
     model="hy3",
-    messages=[{"role": "user", "content": "璇佹槑鈭?鏄棤鐞嗘暟"}],
+    messages=[{"role": "user", "content": "证明√2是无理数"}],
     extra_body={"chat_template_kwargs": {"reasoning_effort": "high"}},
 )
 ```
 
-> **娉ㄦ剰**锛氬紑鍚繁搴︽€濊€冨悗锛屽搷搴斾腑浼氬寘鍚?`reasoning_content` 瀛楁锛堟€濊€冭繃绋嬶級锛宍content` 瀛楁涓烘渶缁堢瓟妗堛€?
-### 4.3 宸ュ叿璋冪敤 (Tools / Function Calling)
+> **注意**：开启深度思考后，响应中会包含 `reasoning_content` 字段（思考过程），`content` 字段为最终答案。
+
+### 4.3 工具调用 (Tools / Function Calling)
 
 ```python
 tools = [
@@ -228,11 +238,11 @@ tools = [
         "type": "function",
         "function": {
             "name": "get_weather",
-            "description": "鑾峰彇鎸囧畾鍩庡競鐨勫ぉ姘斾俊鎭?,
+            "description": "获取指定城市的天气信息",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "city": {"type": "string", "description": "鍩庡競鍚嶇О"}
+                    "city": {"type": "string", "description": "城市名称"}
                 },
                 "required": ["city"],
             },
@@ -242,29 +252,30 @@ tools = [
 
 response = client.chat.completions.create(
     model="hy3",
-    messages=[{"role": "user", "content": "鍖椾含浠婂ぉ澶╂皵鎬庝箞鏍凤紵"}],
+    messages=[{"role": "user", "content": "北京今天天气怎么样？"}],
     tools=tools,
     tool_choice="auto",  # auto / none / required
 )
 ```
 
-`tool_choice` 閫夐」锛?| 鍊?| 璇存槑 |
+`tool_choice` 选项：
+| 值 | 说明 |
 |----|------|
-| `"auto"` | 妯″瀷鑷姩鍐冲畾鏄惁璋冪敤宸ュ叿锛堥粯璁わ級 |
-| `"none"` | 涓嶈皟鐢ㄥ伐鍏凤紝鐩存帴鍥炲 |
-| `"required"` | 寮哄埗璋冪敤宸ュ叿 |
-| `{"type": "function", "function": {"name": "xxx"}}` | 寮哄埗璋冪敤鎸囧畾宸ュ叿 |
+| `"auto"` | 模型自动决定是否调用工具（默认） |
+| `"none"` | 不调用工具，直接回复 |
+| `"required"` | 强制调用工具 |
+| `{"type": "function", "function": {"name": "xxx"}}` | 强制调用指定工具 |
 
 ---
 
-## 5. 杩涢樁鑳藉姏
+## 5. 进阶能力
 
-### 5.1 娴佸紡杈撳嚭 (Streaming)
+### 5.1 流式输出 (Streaming)
 
 ```python
 stream = client.chat.completions.create(
     model="hy3",
-    messages=[{"role": "user", "content": "鍐欎竴棣栧叧浜庝汉宸ユ櫤鑳界殑璇?}],
+    messages=[{"role": "user", "content": "写一首关于人工智能的诗"}],
     stream=True,
 )
 
@@ -274,14 +285,14 @@ for chunk in stream:
         print(delta.content, end="", flush=True)
 ```
 
-### 5.2 澶氳疆瀵硅瘽
+### 5.2 多轮对话
 
 ```python
 messages = [
-    {"role": "system", "content": "浣犳槸涓€涓笓涓氱殑 Python 缂栫▼鍔╂墜銆?},
-    {"role": "user", "content": "Python 涓浣曞弽杞竴涓垪琛紵"},
-    {"role": "assistant", "content": "鍙互浣跨敤 `list.reverse()` 鏂规硶鎴栧垏鐗?`list[::-1]`銆?},
-    {"role": "user", "content": "杩欎袱绉嶆柟寮忔湁浠€涔堝尯鍒紵"},
+    {"role": "system", "content": "你是一个专业的 Python 编程助手。"},
+    {"role": "user", "content": "Python 中如何反转一个列表？"},
+    {"role": "assistant", "content": "可以使用 `list.reverse()` 方法或切片 `list[::-1]`。"},
+    {"role": "user", "content": "这两种方式有什么区别？"},
 ]
 
 response = client.chat.completions.create(
@@ -290,92 +301,118 @@ response = client.chat.completions.create(
 )
 ```
 
-### 5.3 缁撴瀯鍖栬緭鍑?
-Hy3 鏀寔 `response_format` 鍙傛暟寮哄埗 JSON 杈撳嚭锛?
+### 5.3 结构化输出
+
+Hy3 支持 `response_format` 参数强制 JSON 输出：
+
 ```python
 response = client.chat.completions.create(
     model="hy3",
-    messages=[{"role": "user", "content": "鍒楀嚭 3 绉嶆帓搴忕畻娉曠殑鍚嶇О鍜屽鏉傚害"}],
+    messages=[{"role": "user", "content": "列出 3 种排序算法的名称和复杂度"}],
     response_format={"type": "json_object"},
 )
 ```
 
-### 5.4 鑾峰彇 Token 鐢ㄩ噺
+### 5.4 获取 Token 用量
 
-姣忔璇锋眰鐨勫搷搴斾腑鍧囧寘鍚?`usage` 瀛楁锛?
+每次请求的响应中均包含 `usage` 字段：
+
 ```python
-print(f"杈撳叆 tokens: {response.usage.prompt_tokens}")
-print(f"杈撳嚭 tokens: {response.usage.completion_tokens}")
-print(f"鎬昏 tokens: {response.usage.total_tokens}")
+print(f"输入 tokens: {response.usage.prompt_tokens}")
+print(f"输出 tokens: {response.usage.completion_tokens}")
+print(f"总计 tokens: {response.usage.total_tokens}")
 ```
 
 ---
 
-## 6. 甯歌鎶ラ敊涓庢帓鏌?
-### 6.1 璁よ瘉閿欒 (401 Unauthorized)
+## 6. 常见报错与排查
+
+### 6.1 认证错误 (401 Unauthorized)
 
 ```
 Error: 401 - Invalid API Key
 ```
 
-**鍘熷洜**锛欰PI Key 鏃犳晥鎴栨湭浼犲叆銆?**瑙ｅ喅**锛?- 妫€鏌?`Authorization: Bearer <key>` 澶撮儴鏄惁姝ｇ‘
-- 纭 API Key 鏈繃鏈燂紙TokenHub 鎺у埗鍙板彲鏌ョ湅锛?- 妫€鏌ョ幆澧冨彉閲忔槸鍚︽纭缃?
-### 6.2 闄愭祦閿欒 (429 Too Many Requests)
+**原因**：API Key 无效或未传入。
+**解决**：
+- 检查 `Authorization: Bearer <key>` 头部是否正确
+- 确认 API Key 未过期（TokenHub 控制台可查看）
+- 检查环境变量是否正确设置
+
+### 6.2 限流错误 (429 Too Many Requests)
 
 ```
 Error: 429 - Rate limit exceeded
 ```
 
-**鍘熷洜**锛氳秴鍑?API 閫熺巼闄愬埗銆?**瑙ｅ喅**锛?- 闄嶄綆璇锋眰棰戠巼锛屽疄鐜版寚鏁伴€€閬块噸璇曪紙鍙傝 [06_error_handling.py](examples/06_error_handling.py)锛?- 鍗囩骇濂楅浠ヨ幏寰楁洿楂樺苟鍙戦厤棰?
-### 6.3 瓒呮椂閿欒
+**原因**：超出 API 速率限制。
+**解决**：
+- 降低请求频率，实现指数退避重试（参见 [06_error_handling.py](examples/06_error_handling.py)）
+- 升级套餐以获得更高并发配额
+
+### 6.3 超时错误
 
 ```
 Error: Request timed out / ReadTimeout
 ```
 
-**鍘熷洜**锛氳姹傛椂闂磋繃闀匡紝鏈嶅姟鍣ㄦ棤鍝嶅簲銆?**瑙ｅ喅**锛?- 澧炲ぇ `timeout` 鍙傛暟锛歚OpenAI(..., timeout=60.0)`
-- 鍑忓皬 `max_tokens` 浠ョ缉鐭敓鎴愭椂闂?- 鍚敤 `stream=True` 鑾峰彇澧為噺杈撳嚭
+**原因**：请求时间过长，服务器无响应。
+**解决**：
+- 增大 `timeout` 参数：`OpenAI(..., timeout=60.0)`
+- 减小 `max_tokens` 以缩短生成时间
+- 启用 `stream=True` 获取增量输出
 
-### 6.4 妯″瀷涓嶅彲鐢?(404 Not Found)
+### 6.4 模型不可用 (404 Not Found)
 
 ```
 Error: 404 - Model not found
 ```
 
-**鍘熷洜**锛氭ā鍨嬪悕閿欒鎴栨湭寮€閫氥€?**瑙ｅ喅**锛?- 纭妯″瀷鍚嶆嫾鍐欙細搴斾负 `hy3` 鎴?`hy3-preview`
-- TokenHub 闇€鍦ㄦ帶鍒跺彴鍏堝紑閫氬搴旀ā鍨?
-### 6.5 鍐呭杩囨护 (400 Bad Request)
+**原因**：模型名错误或未开通。
+**解决**：
+- 确认模型名拼写：应为 `hy3` 或 `hy3-preview`
+- TokenHub 需在控制台先开通对应模型
+
+### 6.5 内容过滤 (400 Bad Request)
 
 ```
 Error: 400 - Content filtered
 ```
 
-**鍘熷洜**锛氳緭鍏ユ垨杈撳嚭瑙﹀彂瀹夊叏瀹℃牳銆?**瑙ｅ喅**锛?- 淇敼 prompt 鎺緸
-- 纭鍐呭涓嶈繚鍙嶄娇鐢ㄦ潯娆?
-### 6.6 杩炴帴閿欒
+**原因**：输入或输出触发安全审核。
+**解决**：
+- 修改 prompt 措辞
+- 确认内容不违反使用条款
+
+### 6.6 连接错误
 
 ```
 Error: ConnectionError / Connection refused
 ```
 
-**鍘熷洜**锛氱綉缁滀笉閫氭垨 Base URL 涓嶆纭€?**瑙ｅ喅**锛?- 纭 `base_url` 鎷煎啓姝ｇ‘锛堟敞鎰?`/v1` 鍚庣紑锛?- 妫€鏌ラ槻鐏/浠ｇ悊璁剧疆
-- 鑷儴缃叉椂纭鏈嶅姟宸插惎鍔細`curl http://127.0.0.1:8000/v1/models`
+**原因**：网络不通或 Base URL 不正确。
+**解决**：
+- 确认 `base_url` 拼写正确（注意 `/v1` 后缀）
+- 检查防火墙/代理设置
+- 自部署时确认服务已启动：`curl http://127.0.0.1:8000/v1/models`
 
 ---
 
-## 7. 鏇村绀轰緥
+## 7. 更多示例
 
-瀹屾暣鐨勫彲杩愯绀轰緥璇锋煡鐪?[examples/](examples/) 鐩綍锛?
-| # | 绀轰緥 | 鏂囦欢 | 璇存槑 |
+完整的可运行示例请查看 [examples/](examples/) 目录：
+
+| # | 示例 | 文件 | 说明 |
 |---|------|------|------|
-| 1 | Basic Chat | [`01_basic_chat.py`](examples/01_basic_chat.py) | 鍗曡疆 & 澶氳疆瀵硅瘽 |
-| 2 | Streaming | [`02_streaming.py`](examples/02_streaming.py) | 娴佸紡璇锋眰 + 閫?chunk 瑙ｆ瀽 |
-| 3 | Latency Comparison | [`03_latency_compare.py`](examples/03_latency_compare.py) | 娴佸紡 vs 闈炴祦寮忥細棣?token 鏃跺欢 & 鎬昏€楁椂 |
-| 4 | Tool Calling | [`04_tool_calling.py`](examples/04_tool_calling.py) | 鍗曟璋冪敤 + 澶氳疆宸ュ叿寰幆 |
-| 5 | Reasoning Mode | [`05_reasoning_mode.py`](examples/05_reasoning_mode.py) | 娣卞害鎬濊€?寮€/鍏?瀵规瘮 |
-| 6 | Error Handling | [`06_error_handling.py`](examples/06_error_handling.py) | 瓒呮椂/闄愭祦/缃戠粶閿欒鐨勯噸璇曚笌閫€閬?|
+| 1 | Basic Chat | [`01_basic_chat.py`](examples/01_basic_chat.py) | 单轮 & 多轮对话 |
+| 2 | Streaming | [`02_streaming.py`](examples/02_streaming.py) | 流式请求 + 逐 chunk 解析 |
+| 3 | Latency Comparison | [`03_latency_compare.py`](examples/03_latency_compare.py) | 流式 vs 非流式：首 token 时延 & 总耗时 |
+| 4 | Tool Calling | [`04_tool_calling.py`](examples/04_tool_calling.py) | 单次调用 + 多轮工具循环 |
+| 5 | Reasoning Mode | [`05_reasoning_mode.py`](examples/05_reasoning_mode.py) | 深度思考 开/关 对比 |
+| 6 | Error Handling | [`06_error_handling.py`](examples/06_error_handling.py) | 超时/限流/网络错误的重试与退避 |
 
-鎵€鏈夌ず渚嬪彲鐩存帴杩愯锛?
+所有示例可直接运行：
+
 ```bash
 export HY3_API_KEY="your-key"
 cd examples
@@ -384,9 +421,10 @@ python 01_basic_chat.py
 
 ---
 
-## 闄勫綍锛歷LLM 閮ㄧ讲蹇€熷弬鑰?
+## 附录：vLLM 部署快速参考
+
 ```bash
-# 1. 鍚姩 vLLM 鏈嶅姟
+# 1. 启动 vLLM 服务
 export VLLM_FLASHINFER_ALLREDUCE_BACKEND=trtllm
 vllm serve tencent/Hy3 \
   --tensor-parallel-size 8 \
@@ -398,11 +436,12 @@ vllm serve tencent/Hy3 \
   --port 8000 \
   --served-model-name hy3
 
-# 2. 楠岃瘉鏈嶅姟
+# 2. 验证服务
 curl http://127.0.0.1:8000/v1/models
 ```
 
-## 闄勫綍锛歋GLang 閮ㄧ讲蹇€熷弬鑰?
+## 附录：SGLang 部署快速参考
+
 ```bash
 python3 -m sglang.launch_server \
   --model tencent/Hy3 \

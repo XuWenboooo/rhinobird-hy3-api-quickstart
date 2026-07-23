@@ -1,13 +1,15 @@
 """
-Example 5: Reasoning Mode 鈥?鎬濊€冭繃绋?寮€/鍏?瀵规瘮
+Example 5: Reasoning Mode — 思考过程 开/关 对比
 ================================================
 
-鏈ず渚嬫紨绀?Hy3 鐨勩€屽揩鎱㈡€濊€冭瀺鍚堛€嶈兘鍔涳細
-  - 蹇€濊€?(no_think / low)锛氱洿鎺ヨ緭鍑虹瓟妗堬紝閫傚悎鏃ュ父瀵硅瘽
-  - 鎱㈡€濊€?(high / medium)锛氬厛鎺ㄧ悊鍐嶅洖绛旓紝閫傚悎澶嶆潅浠诲姟
-  - 瀵规瘮鍚屼竴闂鍦ㄤ笉鍚屾帹鐞嗘ā寮忎笅鐨勮緭鍑哄樊寮?  - 灞曠ず濡備綍鑾峰彇 reasoning_content锛堟€濊€冭繃绋嬶級
+本示例演示 Hy3 的「快慢思考融合」能力：
+  - 快思考 (no_think / low)：直接输出答案，适合日常对话
+  - 慢思考 (high / medium)：先推理再回答，适合复杂任务
+  - 对比同一问题在不同推理模式下的输出差异
+  - 展示如何获取 reasoning_content（思考过程）
 
-杩愯鏂瑰紡锛?    export HY3_API_KEY="your-api-key"
+运行方式：
+    export HY3_API_KEY="your-api-key"
     python 05_reasoning_mode.py
 """
 
@@ -16,7 +18,7 @@ import time
 from openai import OpenAI
 
 # ============================================================
-# 閰嶇疆
+# 配置
 # ============================================================
 
 API_KEY = os.environ.get("HY3_API_KEY", "your-api-key-here")
@@ -33,36 +35,40 @@ def print_section(title: str):
 
 
 # ============================================================
-# 娴嬭瘯闂闆?# ============================================================
+# 测试问题集
+# ============================================================
 
-# 绠€鍗曢棶棰?鈥?涓嶉渶瑕佹繁搴︽€濊€?SIMPLE_QUESTION = "璇风敤涓€鍙ヨ瘽浠嬬粛鑵捐鍏徃銆?
+# 简单问题 — 不需要深度思考
+SIMPLE_QUESTION = "请用一句话介绍腾讯公司。"
 
-# 涓瓑闅惧害 鈥?闇€瑕佷竴瀹氭帹鐞?MEDIUM_QUESTION = "涓€涓暱鏂瑰舰鐨勯暱鏄鐨?2 鍊嶏紝鍛ㄩ暱鏄?36 鍘樼背銆傛眰杩欎釜闀挎柟褰㈢殑闈㈢Н銆?
+# 中等难度 — 需要一定推理
+MEDIUM_QUESTION = "一个长方形的长是宽的 2 倍，周长是 36 厘米。求这个长方形的面积。"
 
-# 鍥伴毦闂 鈥?闇€瑕佹繁搴︽帹鐞?HARD_QUESTION = "鐢层€佷箼銆佷笝涓変汉涓彧鏈変竴涓汉璇翠簡鐪熻瘽銆傜敳璇达細'涔欏湪璇磋皫'銆備箼璇达細'涓欏湪璇磋皫'銆備笝璇达細'鐢插拰涔欓兘鍦ㄨ璋?銆傝闂皝璇翠簡鐪熻瘽锛熻閫愭鎺ㄧ悊銆?
+# 困难问题 — 需要深度推理
+HARD_QUESTION = "甲、乙、丙三人中只有一个人说了真话。甲说：'乙在说谎'。乙说：'丙在说谎'。丙说：'甲和乙都在说谎'。请问谁说了真话？请逐步推理。"
 
 
 def run_comparison(question: str, label: str):
-    """瀵规瘮涓嶅悓 reasoning_effort 妯″紡涓嬬殑杈撳嚭"""
-    print(f"\n{'鈹€' * 56}")
-    print(f"馃摑 闂 ({label}): {question[:60]}...")
-    print(f"{'鈹€' * 56}")
+    """对比不同 reasoning_effort 模式下的输出"""
+    print(f"\n{'─' * 56}")
+    print(f"📝 问题 ({label}): {question[:60]}...")
+    print(f"{'─' * 56}")
 
     modes = [
-        ("no_think", "蹇€濊€?鈥?鐩存帴鍥炵瓟"),
-        ("high", "鎱㈡€濊€?鈥?娣卞害鎺ㄧ悊"),
+        ("no_think", "快思考 — 直接回答"),
+        ("high", "慢思考 — 深度推理"),
     ]
 
     results = {}
 
     for effort, description in modes:
-        print(f"\n馃敼 {description} (reasoning_effort='{effort}')")
-        print(f"{'鈹€' * 40}")
+        print(f"\n🔹 {description} (reasoning_effort='{effort}')")
+        print(f"{'─' * 40}")
 
         start_time = time.time()
 
         try:
-            # 浣跨敤娴佸紡浠ュ垎鍒崟鑾?reasoning_content 鍜?content
+            # 使用流式以分别捕获 reasoning_content 和 content
             stream = client.chat.completions.create(
                 model=MODEL,
                 messages=[{"role": "user", "content": question}],
@@ -80,34 +86,35 @@ def run_comparison(question: str, label: str):
                 chunk_count += 1
                 delta = chunk.choices[0].delta
 
-                # 鎹曡幏鎺ㄧ悊杩囩▼
+                # 捕获推理过程
                 if hasattr(delta, "reasoning_content") and delta.reasoning_content:
                     reasoning_text += delta.reasoning_content
 
-                # 鎹曡幏鏈€缁堝洖绛?                if delta.content:
+                # 捕获最终回答
+                if delta.content:
                     answer_text += delta.content
 
             end_time = time.time()
 
-            # 鎵撳嵃缁撴灉
+            # 打印结果
             if reasoning_text:
-                print(f"   馃 鎬濊€冭繃绋?({len(reasoning_text)} 瀛楃):")
-                # 缂╄繘鏄剧ず鎬濊€冨唴瀹圭殑鍓?300 瀛楃
+                print(f"   🧠 思考过程 ({len(reasoning_text)} 字符):")
+                # 缩进显示思考内容的前 300 字符
                 for line in reasoning_text[:300].split("\n"):
                     print(f"      {line}")
                 if len(reasoning_text) > 300:
-                    print(f"      ... (鍏?{len(reasoning_text)} 瀛楃)")
+                    print(f"      ... (共 {len(reasoning_text)} 字符)")
 
-            print(f"\n   馃挰 鏈€缁堝洖绛?({len(answer_text)} 瀛楃):")
+            print(f"\n   💬 最终回答 ({len(answer_text)} 字符):")
             for line in answer_text[:400].split("\n"):
                 print(f"      {line}")
             if len(answer_text) > 400:
-                print(f"      ... (鍏?{len(answer_text)} 瀛楃)")
+                print(f"      ... (共 {len(answer_text)} 字符)")
 
-            print(f"\n   鈴憋笍  鎬昏€楁椂: {end_time - start_time:.2f}s | "
+            print(f"\n   ⏱️  总耗时: {end_time - start_time:.2f}s | "
                   f"chunks: {chunk_count} | "
-                  f"鎬濊€? {len(reasoning_text)}瀛楃 | "
-                  f"鍥炵瓟: {len(answer_text)}瀛楃")
+                  f"思考: {len(reasoning_text)}字符 | "
+                  f"回答: {len(answer_text)}字符")
 
             results[effort] = {
                 "reasoning_chars": len(reasoning_text),
@@ -117,62 +124,79 @@ def run_comparison(question: str, label: str):
             }
 
         except Exception as e:
-            print(f"   鈿狅笍 閿欒: {e}")
-            print(f"   鎻愮ず: 閮ㄥ垎骞冲彴鍙兘涓嶆敮鎸侀《灞?reasoning_effort 鍙傛暟銆?)
-            print(f"   鑷儴缃?(vLLM) 璇烽€氳繃 extra_body={{'chat_template_kwargs': {{'reasoning_effort': '{effort}'}}}} 浼犻€掋€?)
+            print(f"   ⚠️ 错误: {e}")
+            print(f"   提示: 部分平台可能不支持顶层 reasoning_effort 参数。")
+            print(f"   自部署 (vLLM) 请通过 extra_body={{'chat_template_kwargs': {{'reasoning_effort': '{effort}'}}}} 传递。")
             results[effort] = None
 
-    # 瀵规瘮鎬荤粨
+    # 对比总结
     if all(v is not None for v in results.values()):
-        print(f"\n   馃搳 瀵规瘮鎬荤粨:")
-        print(f"   {'妯″紡':<15} {'鎬濊€冨瓧绗?:>8} {'鍥炵瓟瀛楃':>8} {'鑰楁椂':>8}")
+        print(f"\n   📊 对比总结:")
+        print(f"   {'模式':<15} {'思考字符':>8} {'回答字符':>8} {'耗时':>8}")
         for effort, desc in modes:
             r = results[effort]
             print(f"   {effort:<15} {r['reasoning_chars']:>8} {r['answer_chars']:>8} {r['time']:>7.2f}s")
 
-        # 鍒嗘瀽宸紓
+        # 分析差异
         no_think = results["no_think"]
         high = results["high"]
         if high["reasoning_chars"] > no_think["reasoning_chars"]:
-            print(f"\n   馃挕 娣卞害鎬濊€冩ā寮忎骇鐢熶簡 {high['reasoning_chars'] - no_think['reasoning_chars']} "
-                  f"瀛楃鐨勯澶栨帹鐞嗗唴瀹广€?)
-            print(f"   娣卞害鎬濊€冩ā寮忚€楁椂绾︽槸蹇€濊€冪殑 {high['time'] / no_think['time']:.1f} 鍊嶏紝")
-            print(f"   浣嗙瓟妗堣川閲忛€氬父鏇撮珮锛堝挨鍏舵槸澶嶆潅鎺ㄧ悊棰橈級銆?)
+            print(f"\n   💡 深度思考模式产生了 {high['reasoning_chars'] - no_think['reasoning_chars']} "
+                  f"字符的额外推理内容。")
+            print(f"   深度思考模式耗时约是快思考的 {high['time'] / no_think['time']:.1f} 倍，")
+            print(f"   但答案质量通常更高（尤其是复杂推理题）。")
 
     return results
 
 
 # ============================================================
-# 1. 绠€鍗曢棶棰樺姣?# ============================================================
+# 1. 简单问题对比
+# ============================================================
 
-print_section("1. 绠€鍗曢棶棰?鈥?蹇€濊€?vs 鎱㈡€濊€?)
-run_comparison(SIMPLE_QUESTION, "绠€鍗?)
+print_section("1. 简单问题 — 快思考 vs 慢思考")
+run_comparison(SIMPLE_QUESTION, "简单")
 
 
 # ============================================================
-# 2. 鍥伴毦闂瀵规瘮
+# 2. 困难问题对比
 # ============================================================
 
-print_section("2. 鍥伴毦闂 鈥?蹇€濊€?vs 鎱㈡€濊€冿紙閲嶇偣瀵规瘮锛?)
-run_comparison(HARD_QUESTION, "鍥伴毦")
+print_section("2. 困难问题 — 快思考 vs 慢思考（重点对比）")
+run_comparison(HARD_QUESTION, "困难")
 
 
 # ============================================================
-# 3. 鎺ㄧ悊妯″紡浣跨敤寤鸿
+# 3. 推理模式使用建议
 # ============================================================
 
-print_section("3. 浣跨敤寤鸿")
+print_section("3. 使用建议")
 
 print("""
-鈹屸攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?鎺ㄧ悊妯″紡         鈹?閫傜敤鍦烘櫙              鈹?鐗圭偣                  鈹?鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?no_think / low  鈹?鏃ュ父瀵硅瘽銆佺畝鍗曢棶绛?    鈹?閫熷害蹇紝鎴愭湰浣?        鈹?鈹?                鈹?淇℃伅妫€绱€佺炕璇?        鈹?鐩存帴杩斿洖绛旀           鈹?鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?medium          鈹?涓€鑸垎鏋愩€佺患鍚?        鈹?閫傚害鎺ㄧ悊锛屽钩琛￠€熷害璐ㄩ噺  鈹?鈹?                鈹?涓瓑闅惧害浠诲姟           鈹?                      鈹?鈹溾攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹尖攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?鈹?high            鈹?鏁板璇佹槑銆佸鏉傜紪绋?    鈹?娣卞害鎬濈淮閾撅紝鎺ㄧ悊鏇村噯纭? 鈹?鈹?                鈹?閫昏緫鎺ㄧ悊銆佷唬鐮佽皟璇?    鈹?鑰楁椂杈冮暱锛屾垚鏈緝楂?     鈹?鈹斺攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹粹攢鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹?
-馃挕 鏈€浣冲疄璺?
-  - 瀵逛簬鏄庣‘绠€鍗曠殑浠诲姟锛屼娇鐢?"no_think" 鑺傜渷鎴愭湰鍜屽欢杩?  - 瀵逛簬闇€瑕佹帹鐞嗙殑浠诲姟锛屽厛鐢?"high" 灏濊瘯
-  - 鍙互閫氳繃姣旇緝涓ゆ璋冪敤鐨勭粨鏋滄潵鍒ゆ柇鏄惁闇€瑕佹繁搴︽€濊€?  - reasoning_content 鍙敤浜庡睍绀烘ā鍨嬬殑鎺ㄧ悊杩囩▼锛屽寮哄彲瑙ｉ噴鎬?
-鈿狅笍 鑷儴缃?(vLLM) 鐢ㄦ埛娉ㄦ剰:
-   reasoning_effort 閫氳繃 extra_body 浼犻€?
+┌─────────────────┬──────────────────────┬──────────────────────┐
+│ 推理模式         │ 适用场景              │ 特点                  │
+├─────────────────┼──────────────────────┼──────────────────────┤
+│ no_think / low  │ 日常对话、简单问答     │ 速度快，成本低         │
+│                 │ 信息检索、翻译         │ 直接返回答案           │
+├─────────────────┼──────────────────────┼──────────────────────┤
+│ medium          │ 一般分析、综合         │ 适度推理，平衡速度质量  │
+│                 │ 中等难度任务           │                       │
+├─────────────────┼──────────────────────┼──────────────────────┤
+│ high            │ 数学证明、复杂编程     │ 深度思维链，推理更准确  │
+│                 │ 逻辑推理、代码调试     │ 耗时较长，成本较高      │
+└─────────────────┴──────────────────────┴──────────────────────┘
+
+💡 最佳实践:
+  - 对于明确简单的任务，使用 "no_think" 节省成本和延迟
+  - 对于需要推理的任务，先用 "high" 尝试
+  - 可以通过比较两次调用的结果来判断是否需要深度思考
+  - reasoning_content 可用于展示模型的推理过程，增强可解释性
+
+⚠️ 自部署 (vLLM) 用户注意:
+   reasoning_effort 通过 extra_body 传递:
    extra_body={"chat_template_kwargs": {"reasoning_effort": "high"}}
 
-   SGLang 鐢ㄦ埛璇峰弬鑰冩渶鏂?SGLang cookbook銆?""")
+   SGLang 用户请参考最新 SGLang cookbook。
+""")
 
 print()
-print("鉁?Example 5 瀹屾垚锛?)
+print("✅ Example 5 完成！")

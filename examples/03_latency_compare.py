@@ -1,14 +1,18 @@
 """
-Example 3: Non-Streaming vs Streaming 鈥?棣?Token 鏃跺欢 & 鎬昏€楁椂瀵规瘮
+Example 3: Non-Streaming vs Streaming — 首 Token 时延 & 总耗时对比
 ==================================================================
 
-鏈ず渚嬪姣?Hy3 API 鐨勪袱绉嶈緭鍑烘ā寮忥細
-  - 闈炴祦寮?(non-streaming)锛氱瓑寰呭畬鏁村搷搴斿悗涓€娆℃€ц繑鍥?  - 娴佸紡 (streaming)锛氶€愭杩斿洖鐢熸垚鍐呭
+本示例对比 Hy3 API 的两种输出模式：
+  - 非流式 (non-streaming)：等待完整响应后一次性返回
+  - 流式 (streaming)：逐步返回生成内容
 
-鍏抽敭鎸囨爣锛?  - TTFT (Time To First Token)锛氶涓?token 鐨勭瓑寰呮椂闂?  - 鎬昏€楁椂锛氫粠鍙戣捣璇锋眰鍒版敹鍒板畬鏁村洖澶嶇殑鏃堕棿
-  - 鐢ㄦ埛浣撻獙宸紓锛氭祦寮忓彲鎻愬墠鐪嬪埌閮ㄥ垎鍐呭
+关键指标：
+  - TTFT (Time To First Token)：首个 token 的等待时间
+  - 总耗时：从发起请求到收到完整回复的时间
+  - 用户体验差异：流式可提前看到部分内容
 
-杩愯鏂瑰紡锛?    export HY3_API_KEY="your-api-key"
+运行方式：
+    export HY3_API_KEY="your-api-key"
     python 03_latency_compare.py
 """
 
@@ -17,7 +21,7 @@ import time
 from openai import OpenAI
 
 # ============================================================
-# 閰嶇疆
+# 配置
 # ============================================================
 
 API_KEY = os.environ.get("HY3_API_KEY", "your-api-key-here")
@@ -34,30 +38,30 @@ def print_section(title: str):
 
 
 # ============================================================
-# 娴嬭瘯閰嶇疆
+# 测试配置
 # ============================================================
 
-# 浣跨敤鐩稿悓 prompt 鍜屽弬鏁帮紝纭繚瀵规瘮鍏钩
+# 使用相同 prompt 和参数，确保对比公平
 PROMPTS = [
-    "璇风敤 200 瀛楀乏鍙充粙缁嶆満鍣ㄥ涔犵殑涓昏鍒嗙被銆?,
-    "璇峰垪鍑?Python 涓?10 涓父鐢ㄧ殑鏍囧噯搴撳苟绠€瑕佽鏄庡叾鐢ㄩ€斻€?,
-    "璇峰啓涓€娈电害 150 瀛楃殑鏂囧瓧锛岃В閲婁粈涔堟槸娣卞害瀛︿範銆?,
+    "请用 200 字左右介绍机器学习的主要分类。",
+    "请列出 Python 中 10 个常用的标准库并简要说明其用途。",
+    "请写一段约 150 字的文字，解释什么是深度学习。",
 ]
 
-# 闄愬埗杈撳嚭闀垮害浠ヤ繚鎸佹祴璇曞彲閲嶅
+# 限制输出长度以保持测试可重复
 MAX_TOKENS = 300
 
 
 # ============================================================
-# 1. 闈炴祦寮忚姹?(Non-Streaming)
+# 1. 非流式请求 (Non-Streaming)
 # ============================================================
 
-print_section("1. 闈炴祦寮忚姹?(Non-Streaming)")
+print_section("1. 非流式请求 (Non-Streaming)")
 
 non_streaming_results = []
 
 for i, prompt in enumerate(PROMPTS):
-    print(f"馃摛 璇锋眰 #{i+1}: \"{prompt[:60]}...\"")
+    print(f"📤 请求 #{i+1}: \"{prompt[:60]}...\"")
 
     start_time = time.time()
     response = client.chat.completions.create(
@@ -80,22 +84,22 @@ for i, prompt in enumerate(PROMPTS):
         "output_tokens": token_count,
     })
 
-    print(f"   鉁?鎬昏€楁椂: {total_time:.2f}s | "
-          f"杈撳嚭 tokens: {token_count} | "
-          f"瀛楃鏁? {len(content)}")
+    print(f"   ✅ 总耗时: {total_time:.2f}s | "
+          f"输出 tokens: {token_count} | "
+          f"字符数: {len(content)}")
     print()
 
 
 # ============================================================
-# 2. 娴佸紡璇锋眰 (Streaming)
+# 2. 流式请求 (Streaming)
 # ============================================================
 
-print_section("2. 娴佸紡璇锋眰 (Streaming)")
+print_section("2. 流式请求 (Streaming)")
 
 streaming_results = []
 
 for i, prompt in enumerate(PROMPTS):
-    print(f"馃摛 璇锋眰 #{i+1}: \"{prompt[:60]}...\"")
+    print(f"📤 请求 #{i+1}: \"{prompt[:60]}...\"")
 
     ttft = None          # Time To First Token
     start_time = time.time()
@@ -108,7 +112,7 @@ for i, prompt in enumerate(PROMPTS):
         temperature=0.9,
         max_tokens=MAX_TOKENS,
         stream=True,
-        stream_options={"include_usage": True},  # 璇锋眰鍦ㄦ渶鍚?chunk 鍖呭惈 usage
+        stream_options={"include_usage": True},  # 请求在最后 chunk 包含 usage
     )
 
     for chunk in stream:
@@ -116,7 +120,7 @@ for i, prompt in enumerate(PROMPTS):
         delta = chunk.choices[0].delta
 
         if delta.content:
-            # 璁板綍棣?token 鍒拌揪鏃堕棿
+            # 记录首 token 到达时间
             if ttft is None:
                 ttft = time.time() - start_time
             full_content += delta.content
@@ -133,22 +137,22 @@ for i, prompt in enumerate(PROMPTS):
     })
 
     if ttft is not None:
-        print(f"   鉁?TTFT: {ttft:.3f}s | "
-              f"鎬昏€楁椂: {total_time:.2f}s | "
+        print(f"   ✅ TTFT: {ttft:.3f}s | "
+              f"总耗时: {total_time:.2f}s | "
               f"chunks: {chunk_count} | "
-              f"瀛楃鏁? {len(full_content)}")
+              f"字符数: {len(full_content)}")
     else:
-        print(f"   鈿狅笍  鏈敹鍒版湁鏁堝唴瀹?)
+        print(f"   ⚠️  未收到有效内容")
     print()
 
 
 # ============================================================
-# 3. 瀵规瘮鍒嗘瀽
+# 3. 对比分析
 # ============================================================
 
-print_section("3. 瀵规瘮鍒嗘瀽 (Comparison)")
+print_section("3. 对比分析 (Comparison)")
 
-print(f"{'鎸囨爣':<30} {'闈炴祦寮?:>12} {'娴佸紡':>12} {'宸紓':>12}")
+print(f"{'指标':<30} {'非流式':>12} {'流式':>12} {'差异':>12}")
 print(f"{'-'*30} {'-'*12} {'-'*12} {'-'*12}")
 
 for i in range(len(PROMPTS)):
@@ -156,32 +160,33 @@ for i in range(len(PROMPTS)):
     ss = streaming_results[i]
 
     print(f"Prompt #{i+1}:")
-    print(f"  {'鎬昏€楁椂':<28} {ns['total_time']:>11.2f}s {ss['total_time']:>11.2f}s "
+    print(f"  {'总耗时':<28} {ns['total_time']:>11.2f}s {ss['total_time']:>11.2f}s "
           f"{ns['total_time'] - ss['total_time']:>+11.2f}s")
 
     if ss['ttft'] is not None:
-        # 鐢ㄦ埛鎰熺煡寤惰繜锛氭祦寮忎负棣?token 鏃堕棿锛涢潪娴佸紡涓烘€昏€楁椂
-        print(f"  {'鐢ㄦ埛鎰熺煡寤惰繜':<26} {ns['total_time']:>11.2f}s {ss['ttft']:>11.3f}s "
-              f"{ns['total_time'] - ss['ttft']:>+11.2f}s 鈽?)
+        # 用户感知延迟：流式为首 token 时间；非流式为总耗时
+        print(f"  {'用户感知延迟':<26} {ns['total_time']:>11.2f}s {ss['ttft']:>11.3f}s "
+              f"{ns['total_time'] - ss['ttft']:>+11.2f}s ★")
     print()
 
-print("鈽?鐢ㄦ埛鎰熺煡寤惰繜 = 闈炴祦寮忕殑鎬昏€楁椂 vs 娴佸紡鐨勯 token 鏃堕棿")
-print("   娴佸紡妯″紡涓嬶紝鐢ㄦ埛鍑犱箮绔嬪嵆鐪嬪埌鍝嶅簲寮€濮嬬敓鎴愶紝浣撻獙鏄捐憲鏇村ソ銆?)
+print("★ 用户感知延迟 = 非流式的总耗时 vs 流式的首 token 时间")
+print("   流式模式下，用户几乎立即看到响应开始生成，体验显著更好。")
 print()
 
-# 姹囨€荤粺璁?avg_ns_time = sum(r["total_time"] for r in non_streaming_results) / len(non_streaming_results)
+# 汇总统计
+avg_ns_time = sum(r["total_time"] for r in non_streaming_results) / len(non_streaming_results)
 avg_s_time = sum(r["total_time"] for r in streaming_results) / len(streaming_results)
 avg_ttft = sum(r["ttft"] for r in streaming_results if r["ttft"]) / len(streaming_results)
 
-print(f"馃搳 姹囨€荤粺璁?")
-print(f"   闈炴祦寮忓钩鍧囨€昏€楁椂:     {avg_ns_time:.2f}s")
-print(f"   娴佸紡骞冲潎鎬昏€楁椂:       {avg_s_time:.2f}s")
-print(f"   娴佸紡骞冲潎棣?Token 寤惰繜: {avg_ttft:.3f}s")
+print(f"📊 汇总统计:")
+print(f"   非流式平均总耗时:     {avg_ns_time:.2f}s")
+print(f"   流式平均总耗时:       {avg_s_time:.2f}s")
+print(f"   流式平均首 Token 延迟: {avg_ttft:.3f}s")
 print()
-print(f"馃挕 缁撹:")
-print(f"   - 娴佸紡妯″紡鐨勯 token 寤惰繜绾?{avg_ttft:.3f}s锛岀敤鎴峰彲蹇€熺湅鍒板搷搴?)
-print(f"   - 闈炴祦寮忔ā寮忎笅鐢ㄦ埛闇€绛夊緟绾?{avg_ns_time:.2f}s 鎵嶈兘鐪嬪埌浠讳綍鍐呭")
-print(f"   - 鎬昏€楁椂鏂归潰涓よ€呯浉杩戯紙宸窛涓昏鏉ヨ嚜缃戠粶浼犺緭妯″紡鐨勪笉鍚岋級")
+print(f"💡 结论:")
+print(f"   - 流式模式的首 token 延迟约 {avg_ttft:.3f}s，用户可快速看到响应")
+print(f"   - 非流式模式下用户需等待约 {avg_ns_time:.2f}s 才能看到任何内容")
+print(f"   - 总耗时方面两者相近（差距主要来自网络传输模式的不同）")
 
 print()
-print("鉁?Example 3 瀹屾垚锛?)
+print("✅ Example 3 完成！")

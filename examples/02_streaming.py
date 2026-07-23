@@ -1,13 +1,15 @@
 """
-Example 2: Streaming 鈥?娴佸紡璇锋眰 + 閫?chunk 瑙ｆ瀽
+Example 2: Streaming — 流式请求 + 逐 chunk 解析
 ================================================
 
-鏈ず渚嬫紨绀?Hy3 API 鐨勬祦寮忚緭鍑鸿兘鍔涳細
-  - 鍚敤 streaming 妯″紡
-  - 閫?chunk 瑙ｆ瀽 delta 鍐呭
-  - 鍖哄垎 reasoning_content 鍜屾櫘閫?content
-  - 璁＄畻娴佸紡浼犺緭鐨勭粺璁′俊鎭?
-杩愯鏂瑰紡锛?    export HY3_API_KEY="your-api-key"
+本示例演示 Hy3 API 的流式输出能力：
+  - 启用 streaming 模式
+  - 逐 chunk 解析 delta 内容
+  - 区分 reasoning_content 和普通 content
+  - 计算流式传输的统计信息
+
+运行方式：
+    export HY3_API_KEY="your-api-key"
     python 02_streaming.py
 """
 
@@ -16,7 +18,7 @@ import time
 from openai import OpenAI
 
 # ============================================================
-# 閰嶇疆
+# 配置
 # ============================================================
 
 API_KEY = os.environ.get("HY3_API_KEY", "your-api-key-here")
@@ -33,20 +35,20 @@ def print_section(title: str):
 
 
 # ============================================================
-# 1. 鍩烘湰娴佸紡璇锋眰
+# 1. 基本流式请求
 # ============================================================
 
-print_section("1. 鍩烘湰娴佸紡璇锋眰 (Basic Streaming)")
+print_section("1. 基本流式请求 (Basic Streaming)")
 
-prompt = "璇风敤涓夊彞璇濅粙缁嶄汉宸ユ櫤鑳界殑鍙戝睍鍘嗗彶銆?
+prompt = "请用三句话介绍人工智能的发展历史。"
 
-print("馃摛 璇锋眰:")
+print("📤 请求:")
 print(f"   model: {MODEL}")
 print(f"   stream: True")
 print(f"   prompt: \"{prompt}\"")
 print()
 
-print("馃摜 娴佸紡杈撳嚭 (瀹炴椂鎵撳嵃):")
+print("📥 流式输出 (实时打印):")
 print("-" * 40)
 
 stream = client.chat.completions.create(
@@ -57,7 +59,7 @@ stream = client.chat.completions.create(
     stream=True,
 )
 
-# 鏀堕泦瀹屾暣鍐呭
+# 收集完整内容
 full_content = ""
 chunk_count = 0
 start_time = time.time()
@@ -74,24 +76,25 @@ end_time = time.time()
 
 print("\n" + "-" * 40)
 print()
-print(f"馃搳 缁熻:")
-print(f"   鎬?chunks: {chunk_count}")
-print(f"   鎬昏€楁椂: {end_time - start_time:.2f}s")
-print(f"   杈撳嚭瀛楃鏁? {len(full_content)}")
+print(f"📊 统计:")
+print(f"   总 chunks: {chunk_count}")
+print(f"   总耗时: {end_time - start_time:.2f}s")
+print(f"   输出字符数: {len(full_content)}")
 
 
 # ============================================================
-# 2. 娴佸紡璇锋眰 鈥?杩涢樁锛氶€?chunk 瑙ｆ瀽鎵€鏈夊瓧娈?# ============================================================
+# 2. 流式请求 — 进阶：逐 chunk 解析所有字段
+# ============================================================
 
-print_section("2. 閫?Chunk 瑙ｆ瀽 (Per-Chunk Parsing)")
+print_section("2. 逐 Chunk 解析 (Per-Chunk Parsing)")
 
-prompt = "璇锋瘮杈?Python 鍜?JavaScript 鐨勪富瑕佸尯鍒€?
+prompt = "请比较 Python 和 JavaScript 的主要区别。"
 
-print("馃摛 璇锋眰:")
+print("📤 请求:")
 print(f"   prompt: \"{prompt}\"")
 
 print()
-print("馃摜 閫?chunk 璇︽儏 (鍓?10 涓?chunks):")
+print("📥 逐 chunk 详情 (前 10 个 chunks):")
 print(f"   {'#':<5} {'delta_content':<30} {'finish_reason':<15}")
 print(f"   {'-'*5} {'-'*30} {'-'*15}")
 
@@ -115,35 +118,36 @@ for chunk in stream:
     full_text += content
 
     if chunk_count <= 10:
-        # 鎴柇鏄剧ず浠ラ伩鍏嶈繃闀?        display = content[:25].replace("\n", "\\n") + ("..." if len(content) > 25 else "")
+        # 截断显示以避免过长
+        display = content[:25].replace("\n", "\\n") + ("..." if len(content) > 25 else "")
         print(f"   {chunk_count:<5} {display:<30} {finish_reason:<15}")
 
 if chunk_count > 10:
-    print(f"   ... (鐪佺暐 {chunk_count - 10} 涓?chunks)")
+    print(f"   ... (省略 {chunk_count - 10} 个 chunks)")
 
 print()
-print(f"馃搳 缁熻:")
-print(f"   鎬?chunks: {chunk_count}")
-print(f"   瀹屾暣杈撳嚭闀垮害: {len(full_text)} 瀛楃")
+print(f"📊 统计:")
+print(f"   总 chunks: {chunk_count}")
+print(f"   完整输出长度: {len(full_text)} 字符")
 
 print()
-print("馃挰 瀹屾暣杈撳嚭:")
+print("💬 完整输出:")
 print(full_text[:300] + ("..." if len(full_text) > 300 else ""))
 
 
 # ============================================================
-# 3. 娴佸紡璇锋眰 鈥?甯?reasoning (娣卞害鎬濊€冩椂鍙敤)
+# 3. 流式请求 — 带 reasoning (深度思考时可用)
 # ============================================================
 
-print_section("3. 娴佸紡璇锋眰 鈥?鎹曡幏鎺ㄧ悊杩囩▼ (Reasoning Content)")
+print_section("3. 流式请求 — 捕获推理过程 (Reasoning Content)")
 
-prompt = "璁＄畻 15 * 37 + 28 * 43 鐨勭粨鏋溿€傝涓€姝ヤ竴姝ョ畻銆?
+prompt = "计算 15 * 37 + 28 * 43 的结果。请一步一步算。"
 
-print("馃摛 璇锋眰:")
+print("📤 请求:")
 print(f"   prompt: \"{prompt}\"")
-print(f"   reasoning_effort: \"high\" (灏濊瘯鍚敤娣卞害鎬濊€?")
+print(f"   reasoning_effort: \"high\" (尝试启用深度思考)")
 print()
-print("馃摜 娴佸紡杈撳嚭 (鍖哄垎 reasoning 鍜?answer):")
+print("📥 流式输出 (区分 reasoning 和 answer):")
 print("-" * 40)
 
 try:
@@ -153,8 +157,9 @@ try:
         temperature=0.9,
         max_tokens=512,
         stream=True,
-        # 娉ㄦ剰: 涓嶅悓骞冲彴 reasoning_effort 浼犻€掓柟寮忎笉鍚?        # TokenHub: 鐩存帴浼?reasoning_effort="high"
-        # 鑷儴缃? 閫氳繃 extra_body
+        # 注意: 不同平台 reasoning_effort 传递方式不同
+        # TokenHub: 直接传 reasoning_effort="high"
+        # 自部署: 通过 extra_body
         reasoning_effort="high",
     )
 
@@ -164,28 +169,30 @@ try:
     for chunk in stream:
         delta = chunk.choices[0].delta
 
-        # reasoning_content: 妯″瀷鐨勬€濊€冭繃绋?        if hasattr(delta, "reasoning_content") and delta.reasoning_content:
+        # reasoning_content: 模型的思考过程
+        if hasattr(delta, "reasoning_content") and delta.reasoning_content:
             reasoning_text += delta.reasoning_content
-            print(f"[鎬濊€僝 {delta.reasoning_content}", end="", flush=True)
+            print(f"[思考] {delta.reasoning_content}", end="", flush=True)
 
-        # content: 妯″瀷鏈€缁堣緭鍑?        if delta.content:
+        # content: 模型最终输出
+        if delta.content:
             answer_text += delta.content
             print(delta.content, end="", flush=True)
 
     print("\n" + "-" * 40)
     print()
     if reasoning_text:
-        print(f"馃搳 鎬濊€冭繃绋?({len(reasoning_text)} 瀛楃)")
-        print(f"馃搳 鏈€缁堢瓟妗?({len(answer_text)} 瀛楃)")
+        print(f"📊 思考过程 ({len(reasoning_text)} 字符)")
+        print(f"📊 最终答案 ({len(answer_text)} 字符)")
     else:
-        print("鈩癸笍  褰撳墠璇锋眰鏈Е鍙戞繁搴︽€濊€冿紙reasoning_content 涓虹┖锛夈€?)
-        print("   杩欏彲鑳芥槸 API 骞冲彴鎴栨ā鍨嬬増鏈殑宸紓锛岃浠ュ疄闄呭钩鍙版枃妗ｄ负鍑嗐€?)
+        print("ℹ️  当前请求未触发深度思考（reasoning_content 为空）。")
+        print("   这可能是 API 平台或模型版本的差异，请以实际平台文档为准。")
 
 except Exception as e:
-    print(f"\n鈿狅笍  閿欒: {e}")
-    print("   鎻愮ず: 閮ㄥ垎骞冲彴鍙兘涓嶆敮鎸?reasoning_effort 椤跺眰鍙傛暟锛?)
-    print("   璇峰弬鑰?quickstart.md 浜嗚В涓嶅悓骞冲彴鐨勪紶鍙傛柟寮忋€?)
+    print(f"\n⚠️  错误: {e}")
+    print("   提示: 部分平台可能不支持 reasoning_effort 顶层参数，")
+    print("   请参考 quickstart.md 了解不同平台的传参方式。")
 
 
 print()
-print("鉁?Example 2 瀹屾垚锛?)
+print("✅ Example 2 完成！")

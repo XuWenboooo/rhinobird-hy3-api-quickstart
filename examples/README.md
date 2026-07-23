@@ -1,39 +1,45 @@
 # Hy3 API Examples
 
-鏈洰褰曞寘鍚?6 涓彲鐩存帴杩愯鐨?Python 绀轰緥锛岃鐩?Hy3 API 鐨勪富瑕佽兘鍔涖€?
-## 绀轰緥鍒楄〃
+本目录包含 6 个可直接运行的 Python 示例，覆盖 Hy3 API 的主要能力。
 
-| # | 鏂囦欢 | 璇存槑 | 鍏抽敭鑳藉姏 |
+## 示例列表
+
+| # | 文件 | 说明 | 关键能力 |
 |---|------|------|----------|
-| 1 | `01_basic_chat.py` | 鍗曡疆 & 澶氳疆瀵硅瘽 | `chat.completions.create`, system prompt, JSON 杈撳嚭 |
-| 2 | `02_streaming.py` | 娴佸紡璇锋眰 + 閫?chunk 瑙ｆ瀽 | `stream=True`, delta 瑙ｆ瀽, reasoning_content |
-| 3 | `03_latency_compare.py` | 娴佸紡 vs 闈炴祦寮忓欢杩熷姣?| TTFT, 鎬昏€楁椂, 鐢ㄦ埛浣撻獙鍒嗘瀽 |
-| 4 | `04_tool_calling.py` | 宸ュ叿璋冪敤涓庡杞惊鐜?| tools 瀹氫箟, tool_choice, 澶氳疆宸ュ叿寰幆 |
-| 5 | `05_reasoning_mode.py` | 鎬濊€冩ā寮?寮€/鍏?瀵规瘮 | reasoning_effort, 蹇參鎬濊€? reasoning_content |
-| 6 | `06_error_handling.py` | 閿欒澶勭悊涓庢寚鏁伴€€閬块噸璇?| 閲嶈瘯瑁呴グ鍣? 瓒呮椂澶勭悊, 鐢熶骇绾фā鏉?|
+| 1 | `01_basic_chat.py` | 单轮 & 多轮对话 | `chat.completions.create`, system prompt, JSON 输出 |
+| 2 | `02_streaming.py` | 流式请求 + 逐 chunk 解析 | `stream=True`, delta 解析, reasoning_content |
+| 3 | `03_latency_compare.py` | 流式 vs 非流式延迟对比 | TTFT, 总耗时, 用户体验分析 |
+| 4 | `04_tool_calling.py` | 工具调用与多轮循环 | tools 定义, tool_choice, 多轮工具循环 |
+| 5 | `05_reasoning_mode.py` | 思考模式 开/关 对比 | reasoning_effort, 快慢思考, reasoning_content |
+| 6 | `06_error_handling.py` | 错误处理与指数退避重试 | 重试装饰器, 超时处理, 生产级模板 |
 
-## 杩愯鏂瑰紡
+## 运行方式
 
 ```bash
-# 1. 璁剧疆 API Key
+# 1. 设置 API Key
 export HY3_API_KEY="your-api-key-here"
 
-# 2. (鍙€? 鑷畾涔?Base URL
+# 2. (可选) 自定义 Base URL
 export HY3_BASE_URL="https://tokenhub.tencentmaas.com/v1"
 
-# 3. 杩愯浠绘剰绀轰緥
+# 3. 运行任意示例
 python 01_basic_chat.py
 ```
 
-## 鐜瑕佹眰
+## 环境要求
 
 - Python 3.8+
-- `openai` 鍖咃細`pip install openai`
+- `openai` 包：`pip install openai`
 
-## 杈撳嚭璇存槑
+## 输出说明
 
-姣忎釜绀轰緥杩愯鍚庝細鎵撳嵃锛?1. 馃摛 **瀹屾暣璇锋眰** 鈥?璇锋眰鍙傛暟鍜岄厤缃?2. 馃摜 **瀹屾暣 Response 瑙ｆ瀽** 鈥?鍝嶅簲鐨勫叧閿瓧娈?3. 馃挰 **绀轰緥杈撳嚭** 鈥?妯″瀷鐨勫疄闄呭洖澶嶏紙鎴彇鍏抽敭閮ㄥ垎锛?
-## 娉ㄦ剰浜嬮」
+每个示例运行后会打印：
+1. 📤 **完整请求** — 请求参数和配置
+2. 📥 **完整 Response 解析** — 响应的关键字段
+3. 💬 **示例输出** — 模型的实际回复（截取关键部分）
 
-- 绀轰緥涓娇鐢ㄤ簡妯℃嫙鏁版嵁锛堝澶╂皵鏌ヨ銆佸揩閫掓煡璇㈢粨鏋滐級锛岀‘淇濆湪娌℃湁澶栭儴渚濊禆鐨勬儏鍐典笅涔熻兘璺戦€?- 璇锋浛鎹?`your-api-key-here` 涓虹湡瀹炵殑 API Key锛屾垨閫氳繃鐜鍙橀噺 `HY3_API_KEY` 浼犲叆
-- 涓嶅悓 Hy3 API 骞冲彴鐨勫弬鏁颁紶閫掓柟寮忓彲鑳界暐鏈夊樊寮傦紝璇峰弬鑰?`quickstart.md`
+## 注意事项
+
+- 示例中使用了模拟数据（如天气查询、快递查询结果），确保在没有外部依赖的情况下也能跑通
+- 请替换 `your-api-key-here` 为真实的 API Key，或通过环境变量 `HY3_API_KEY` 传入
+- 不同 Hy3 API 平台的参数传递方式可能略有差异，请参考 `quickstart.md`
